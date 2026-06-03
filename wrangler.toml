@@ -13,3 +13,5 @@ compatibility_date = "2025-01-01"
 binding = "STORIES_DB"
 database_name = "stories-db"
 database_id = "d3c91ade-2cd4-4ab1-97c6-274b049cff32"
+[assets]
+directory = "./public"
