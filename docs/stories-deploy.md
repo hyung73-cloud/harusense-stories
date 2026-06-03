@@ -43,6 +43,10 @@ npx wrangler d1 execute stories-db --remote \
 
 > CLI 직접 배포 대안: `npx wrangler pages deploy public --project-name=harusense-stories`
 
+**Workers Builds(Git) + Deploy command `npx wrangler deploy` 사용 시**
+- `src/index.js` 가 `/stories/api/*` 를 처리하고, 정적 파일은 `[assets]` 로 서빙합니다.
+- `wrangler deploy` 만 쓰고 `main` 이 없으면 API 가 **404** → 갤러리에 「네트워크 오류」가 납니다.
+
 ### 6. D1 바인딩 연결
 - Pages 프로젝트 → **Settings → Functions → D1 database bindings**
 - Variable name: `STORIES_DB` / D1 database: `stories-db`

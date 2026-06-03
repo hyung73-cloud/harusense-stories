@@ -3,6 +3,7 @@
 # 단일 repo 사용 시: Pages 프로젝트의 Root directory 를 "stories-annex" 로 지정.
 
 name = "harusense-stories"
+main = "src/index.js"
 pages_build_output_dir = "public"
 compatibility_date = "2025-01-01"
 
@@ -15,3 +16,4 @@ database_name = "stories-db"
 database_id = "d3c91ade-2cd4-4ab1-97c6-274b049cff32"
 [assets]
 directory = "./public"
+binding = "STATIC"
