@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>큐레이션 사무실 · 하루센스 스토리</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/stories/stories.css" />
+  <style>
+    .field { margin: 0 0 14px; }
+    .field label { display:block; font-size:12px; font-weight:700; letter-spacing:.04em; color:var(--ink-soft); margin:0 0 6px; }
+    .field input, .field textarea, .field select {
+      width:100%; font-family:var(--sans); font-size:14px; color:var(--ink);
+      background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:11px 12px;
+    }
+    .field textarea { min-height:160px; line-height:1.7; resize:vertical; }
+    .row { display:flex; gap:10px; }
+    .row > .field { flex:1; }
+    .warn { background:#f6e6dd; border:1px solid #e3c3b2; color:#7a3f24; border-radius:12px; padding:12px 14px; font-size:12.5px; line-height:1.6; margin:0 0 18px; }
+    .stub { background:var(--paper-2); border:1px dashed var(--line); border-radius:12px; padding:14px; font-size:12.5px; color:var(--muted); margin:18px 0; }
+    .out { white-space:pre-wrap; word-break:break-all; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; line-height:1.6;
+      background:#262019; color:#f3ead6; border-radius:12px; padding:16px; margin:14px 0 0; }
+    .btnrow { display:flex; gap:10px; margin-top:14px; }
+    .pbtn { flex:1; height:46px; border-radius:12px; border:1px solid var(--ink); background:var(--ink); color:#fdf7ea; font-weight:700; font-family:var(--sans); cursor:pointer; }
+    .pbtn.ghost { background:var(--surface); color:var(--ink-soft); border-color:var(--line); }
+    .pubitem { padding:12px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+    .pubitem b { font-family:var(--serif); font-weight:600; }
+    .pubitem span { color:var(--muted); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="masthead">
+      <p class="kicker">curation · backstage</p>
+      <h1>큐레이션 사무실</h1>
+      <p class="sub">care 원문은 의료진이 사람의 손으로 익명화·확정한 뒤에만 갤러리로 나갑니다. 이 화면은 <b>care-db에 연결되지 않습니다.</b></p>
+      <div class="lede-rule"></div>
+    </header>
+
+    <div class="warn" style="margin-top:18px">
+      ⚠️ <b>PHI 입력 금지.</b> 환자 이름·생년월일·연락처·문진 원문을 절대 입력하지 마세요. 모든 이야기는 익명·합성 narrative 여야 합니다.
+    </div>
+
+    <section>
+      <h2 style="font-family:var(--serif);font-size:18px;margin:6px 0 14px">① 발행용 SQL 생성기</h2>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 16px">아래 폼을 채우면 <b>stories_published</b> INSERT 문을 만들어 줍니다. 생성된 SQL을 <b>Cloudflare D1 Console</b>에 붙여 실행하면 액자가 갤러리에 걸립니다. (쓰기 API 없음 = 완전 격리)</p>
+
+      <div class="row">
+        <div class="field"><label>market</label>
+          <select id="f_market"><option value="ko" selected>ko (한국)</option><option value="ja">ja (일본·예약)</option><option value="intl">intl (예약)</option></select>
+        </div>
+        <div class="field"><label>access</label>
+          <select id="f_access"><option value="free" selected>free (무료 개방)</option><option value="paid">paid (전시실·예약)</option></select>
+        </div>
+      </div>
+      <div class="field"><label>slug (영문/숫자/하이픈)</label><input id="f_slug" placeholder="first-month-nausea" /></div>
+      <div class="row">
+        <div class="field"><label>archetype slug</label><input id="f_arche" placeholder="first-month / plateau / restart / maintenance" /></div>
+        <div class="field"><label>clinic slug</label><input id="f_clinic" placeholder="newsense-mapo" /></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>cover_emoji</label><input id="f_emoji" value="🌿" /></div>
+        <div class="field"><label>accent</label>
+          <select id="f_accent"><option>sage</option><option>gold</option><option>clay</option><option>ink</option></select>
+        </div>
+        <div class="field"><label>read_minutes</label><input id="f_read" type="number" value="3" min="1" max="30" /></div>
+      </div>
+      <div class="field"><label>title</label><input id="f_title" placeholder="첫 한 달, 메스꺼움과 친해지기" /></div>
+      <div class="field"><label>excerpt (1~2문장)</label><textarea id="f_excerpt" style="min-height:70px"></textarea></div>
+      <div class="field"><label>body_markdown (## 제목, **굵게**, - 리스트, &gt; 인용 지원)</label><textarea id="f_body"></textarea></div>
+
+      <div class="btnrow">
+        <button class="pbtn" id="gen">SQL 생성</button>
+        <button class="pbtn ghost" id="copy">복사</button>
+      </div>
+      <pre class="out" id="out" hidden></pre>
+    </section>
+
+    <div class="stub">
+      <b>// STUB: 2단계</b><br />
+      인증된 draft 워크플로(작성 → 검토 → 승인 → 발행)와 <code>stories_story_drafts</code> 쓰기 API는 2단계 작업입니다.
+      이 어드민 경로(<code>/stories/admin/*</code>)는 배포 시 <b>Cloudflare Access</b>로 게이팅하세요.
+      현재 1단계는 쓰기 API 없이 SQL 생성만 제공하여 care-db·인증 표면을 0으로 유지합니다.
+    </div>
+
+    <section>
+      <h2 style="font-family:var(--serif);font-size:18px;margin:24px 0 8px">② 현재 발행본 (ko · free)</h2>
+      <div id="publist"><div class="skel" style="height:80px"></div></div>
+    </section>
+
+    <footer class="sitefoot"><p><b>backstage</b> · 이 페이지는 검색 비노출(noindex)이며 공개 갤러리와 분리되어 있습니다.</p></footer>
+  </main>
+
+  <script src="/stories/stories.js"></script>
+  <script>
+    (function () {
+      function q(id){ return document.getElementById(id); }
+      // SQL 문자열 이스케이프 (작은따옴표 → '')
+      function s(v){ return "'" + String(v == null ? "" : v).replace(/'/g, "''") + "'"; }
+      function num(v, d){ var n = parseInt(v, 10); return isNaN(n) ? d : n; }
+
+      function clinicExpr(slug){ return slug ? "(SELECT id FROM stories_clinics WHERE slug=" + s(slug) + ")" : "NULL"; }
+      function archeExpr(slug){ return slug ? "(SELECT id FROM stories_archetypes WHERE slug=" + s(slug) + ")" : "NULL"; }
+
+      q("gen").addEventListener("click", function () {
+        var sql =
+          "INSERT INTO stories_published\n" +
+          "  (slug, market, access, clinic_id, archetype_id, title, excerpt, body_markdown, read_minutes, cover_emoji, accent, status)\n" +
+          "VALUES (\n" +
+          "  " + s(q("f_slug").value.trim()) + ", " + s(q("f_market").value) + ", " + s(q("f_access").value) + ",\n" +
+          "  " + clinicExpr(q("f_clinic").value.trim()) + ",\n" +
+          "  " + archeExpr(q("f_arche").value.trim()) + ",\n" +
+          "  " + s(q("f_title").value.trim()) + ",\n" +
+          "  " + s(q("f_excerpt").value.trim()) + ",\n" +
+          "  " + s(q("f_body").value) + ",\n" +
+          "  " + num(q("f_read").value, 3) + ", " + s(q("f_emoji").value || "🌿") + ", " + s(q("f_accent").value) + ", 'published'\n" +
+          ");";
+        var out = q("out");
+        out.hidden = false;
+        out.textContent = sql;
+      });
+
+      q("copy").addEventListener("click", function () {
+        var t = q("out").textContent;
+        if (!t) { HS.toast("먼저 SQL을 생성하세요"); return; }
+        navigator.clipboard.writeText(t).then(function(){ HS.toast("SQL을 복사했어요"); }, function(){ HS.toast("복사 실패"); });
+      });
+
+      // 발행본 목록 (공개 feed API 재사용 = care 무관)
+      fetch(HS.API + "/feed?market=ko&access=free").then(function(r){return r.json();}).then(function(d){
+        var el = q("publist");
+        if (!d.ok || !d.stories.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px">발행본이 없습니다.</p>'; return; }
+        el.innerHTML = d.stories.map(function(x){
+          return '<div class="pubitem"><b>' + HS.esc(x.title) + '</b> &nbsp;<span>' + HS.esc(x.slug) + ' · ♥ ' + (x.like_count||0) + '</span></div>';
+        }).join("");
+      }).catch(function(){ q("publist").innerHTML = '<p style="color:var(--muted)">목록을 불러오지 못했습니다.</p>'; });
+    })();
+  </script>
+</body>
+</html>

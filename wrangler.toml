@@ -1,0 +1,15 @@
+# harusense Stories Gallery — Cloudflare Pages 설정
+# care(harusense-care) 와 완전 분리된 별도 Pages 프로젝트.
+# 단일 repo 사용 시: Pages 프로젝트의 Root directory 를 "stories-annex" 로 지정.
+
+name = "harusense-stories"
+pages_build_output_dir = "public"
+compatibility_date = "2025-01-01"
+
+# D1: stories-db (care-db 와 별개)
+# database_id 는 `wrangler d1 create stories-db` 출력값으로 교체.
+# 대시보드(Pages > Settings > Functions > D1 bindings)에서 설정해도 됨.
+[[d1_databases]]
+binding = "STORIES_DB"
+database_name = "stories-db"
+database_id = "d3c91ade-2cd4-4ab1-97c6-274b049cff32"

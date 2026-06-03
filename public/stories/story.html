@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>하루센스 스토리</title>
+  <meta name="theme-color" content="#f6f1e7" />
+  <link rel="stylesheet" href="/stories/stories.css" />
+</head>
+<body>
+  <main class="wrap">
+    <a class="backlink" href="/stories/">← 갤러리로</a>
+    <article class="article" id="article">
+      <div class="skel"></div>
+    </article>
+  </main>
+
+  <!-- 하단 액션 바 -->
+  <div class="actionbar" id="actionbar" hidden>
+    <div class="actionbar__inner">
+      <button class="act" id="btnLike" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+        <span class="cnt" id="likeCnt">0</span>
+      </button>
+      <button class="act save" id="btnSave" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        저장
+      </button>
+      <button class="act" id="btnShare" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+        공유
+      </button>
+    </div>
+  </div>
+
+  <script src="/stories/stories.js"></script>
+  <script>
+    (function () {
+      var article = document.getElementById("article");
+      var bar = document.getElementById("actionbar");
+      var slug = new URLSearchParams(location.search).get("slug");
+
+      if (!slug) { article.innerHTML = '<div class="state"><div class="em">🔎</div>이야기를 찾을 수 없어요.</div>'; return; }
+
+      fetch(HS.API + "/story?slug=" + encodeURIComponent(slug))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) {
+            article.innerHTML = '<div class="state"><div class="em">🔎</div>이야기를 찾을 수 없어요.</div>';
+            return;
+          }
+          render(data.story);
+        })
+        .catch(function () {
+          article.innerHTML = '<div class="state"><div class="em">⚠️</div>네트워크 오류가 발생했어요.</div>';
+        });
+
+      function render(s) {
+        document.title = s.title + " · 하루센스 스토리";
+        article.setAttribute("data-accent", s.accent || "sage");
+        var meta = ''
+          + (s.archetype_title ? '<span>' + HS.esc(s.archetype_title) + '</span><span class="dot"></span>' : '')
+          + '<span class="read">' + (s.read_minutes || 3) + '분 읽기</span>'
+          + (s.published_at ? '<span class="dot"></span><span class="read">' + HS.fmtDate(s.published_at) + '</span>' : '');
+
+        article.innerHTML = ''
+          + '<div class="article__hero">' + HS.esc(s.cover_emoji || '🌿') + '</div>'
+          + '<div class="article__meta">' + meta + '</div>'
+          + '<h1>' + HS.esc(s.title) + '</h1>'
+          + (s.excerpt ? '<p class="article__excerpt">' + HS.esc(s.excerpt) + '</p>' : '')
+          + '<div class="prose">' + HS.renderMarkdown(s.body_markdown) + '</div>'
+          + (s.clinic_name ? '<p class="article__meta" style="margin-top:26px">전시 · ' + HS.esc(s.clinic_name) + '</p>' : '')
+          + '<div class="disclaimer"><strong>교육용 큐레이션 콘텐츠</strong>입니다. '
+          +   '본 이야기는 익명·합성된 사례이며 특정 개인의 진료 기록이 아닙니다. '
+          +   '진단·처방을 확정하지 않으며, 실제 치료는 반드시 의료진과 상담하세요.</div>';
+
+        // 액션 바
+        bar.hidden = false;
+        var likeCnt = document.getElementById("likeCnt");
+        var btnLike = document.getElementById("btnLike");
+        var btnSave = document.getElementById("btnSave");
+        var btnShare = document.getElementById("btnShare");
+
+        likeCnt.textContent = s.like_count || 0;
+        if (HS.localHas("hs_liked", s.slug)) { btnLike.classList.add("is-on"); btnLike.setAttribute("aria-pressed", "true"); }
+        if (HS.localHas("hs_saved", s.slug)) { btnSave.classList.add("is-on"); btnSave.setAttribute("aria-pressed", "true"); btnSave.lastChild.textContent = " 저장됨"; }
+
+        btnLike.addEventListener("click", function () {
+          btnLike.disabled = true;
+          HS.toggleLike(s.slug).then(function (res) {
+            btnLike.disabled = false;
+            if (!res.ok) { HS.toast("잠시 후 다시 시도해 주세요"); return; }
+            likeCnt.textContent = res.like_count;
+            btnLike.classList.toggle("is-on", res.liked);
+            btnLike.setAttribute("aria-pressed", res.liked ? "true" : "false");
+            HS.localSet("hs_liked", s.slug, res.liked);
+          });
+        });
+
+        btnSave.addEventListener("click", function () {
+          var on = !btnSave.classList.contains("is-on");
+          btnSave.classList.toggle("is-on", on);
+          btnSave.setAttribute("aria-pressed", on ? "true" : "false");
+          btnSave.lastChild.textContent = on ? " 저장됨" : " 저장";
+          HS.localSet("hs_saved", s.slug, on);
+          if (on) { HS.sendEvent("save", s.slug, s.market); HS.toast("저장했어요"); }
+        });
+
+        btnShare.addEventListener("click", function () { HS.copyShare(s.slug); });
+
+        HS.sendEvent("story_view", s.slug, s.market);
+        // 30초 체류 이벤트 (1회)
+        setTimeout(function () { HS.sendEvent("dwell_30s", s.slug, s.market); }, 30000);
+      }
+    })();
+  </script>
+</body>
+</html>

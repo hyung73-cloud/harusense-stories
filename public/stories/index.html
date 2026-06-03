@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>하루센스 스토리 갤러리</title>
+  <meta name="description" content="비만 재진 여정에서 길어 올린 교육용 큐레이션 이야기. 진단·처방을 확정하지 않는 참고 콘텐츠입니다." />
+  <meta name="theme-color" content="#f6f1e7" />
+  <meta property="og:title" content="하루센스 스토리 갤러리" />
+  <meta property="og:description" content="체중 여정에서 길어 올린 교육용 큐레이션 이야기." />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="/stories/stories.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="masthead">
+      <p class="kicker">harusense · stories</p>
+      <h1>여정에서 길어 올린<br />이야기들</h1>
+      <p class="sub">진료실 밖에서 다시 읽는, 체중 여정의 장면들. 큐레이션 사무실에서 다듬은 교육용 이야기를 모았습니다.</p>
+      <div class="lede-rule"></div>
+    </header>
+
+    <!-- wing 바: 오늘은 ko·무료만 활성. 나머지는 DB·라우트 예약 상태 -->
+    <nav class="wingbar" aria-label="갤러리 wing">
+      <button class="chip" aria-current="true">한국 · 무료 개방</button>
+      <button class="chip" data-locked="true" disabled>한국 · 클리닉 전시실</button>
+      <button class="chip" data-locked="true" disabled>일본 wing</button>
+      <button class="chip" data-locked="true" disabled>인터내셔널</button>
+    </nav>
+
+    <section class="feed" id="feed" aria-live="polite">
+      <div class="skel"></div><div class="skel"></div>
+    </section>
+
+    <footer class="sitefoot">
+      <p><b>하루센스 스토리 갤러리</b>는 교육용 큐레이션 콘텐츠 전시 공간입니다. 게시된 이야기는 익명·합성된 사례이며, 특정 개인의 진료 기록이 아닙니다. 진단·처방을 확정하지 않습니다.</p>
+    </footer>
+  </main>
+
+  <script src="/stories/stories.js"></script>
+  <script>
+    (function () {
+      var feed = document.getElementById("feed");
+      var MARKET = "ko", ACCESS = "free";
+
+      function cardHTML(s) {
+        var arche = s.archetype_title ? '<span>' + HS.esc(s.archetype_title) + '</span>' : '';
+        var clinic = s.clinic_name ? HS.esc(s.clinic_name) : '하루센스';
+        var likes = s.like_count ? ('♥ ' + s.like_count) : '♡';
+        return ''
+          + '<article class="card" data-accent="' + HS.esc(s.accent || 'sage') + '">'
+          +   '<a href="/stories/story?slug=' + encodeURIComponent(s.slug) + '">'
+          +     '<div class="card__cover">' + HS.esc(s.cover_emoji || '🌿') + '</div>'
+          +     '<div class="card__body">'
+          +       '<div class="card__meta">' + arche + '<span class="dot"></span>'
+          +         '<span class="read">' + (s.read_minutes || 3) + '분 읽기</span></div>'
+          +       '<h2>' + HS.esc(s.title) + '</h2>'
+          +       '<p>' + HS.esc(s.excerpt || '') + '</p>'
+          +       '<div class="card__foot">'
+          +         '<span class="card__clinic">' + clinic + '</span>'
+          +         '<span class="likepill">' + likes + '</span>'
+          +       '</div>'
+          +     '</div>'
+          +   '</a>'
+          + '</article>';
+      }
+
+      function showState(em, msg) {
+        feed.innerHTML = '<div class="state"><div class="em">' + em + '</div>' + msg + '</div>';
+      }
+
+      fetch(HS.API + "/feed?market=" + MARKET + "&access=" + ACCESS)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) { showState("⚠️", "이야기를 불러오지 못했어요."); return; }
+          if (!data.stories.length) { showState("🌱", "곧 첫 이야기가 걸릴 예정입니다."); return; }
+          feed.innerHTML = data.stories.map(cardHTML).join("");
+          HS.sendEvent("feed_view", null, MARKET);
+        })
+        .catch(function () { showState("⚠️", "네트워크 오류가 발생했어요."); });
+    })();
+  </script>
+</body>
+</html>
